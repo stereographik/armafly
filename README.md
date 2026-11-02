@@ -24,6 +24,7 @@ The left column has two tabs: **AO SET UP** (terrain, base & landing zone, air d
 Plan where to drop a squad and how it reaches the objective under cover.
 1. Place the **AO** (AO mode). It is the objective. Enemies can be anywhere inside it, **but never higher than the ground at the AO marker**: AO positions on higher ground are ignored. AA pits can also fire if the option is checked.
 2. Set the LZ distance ring around the AO centre (min / max), the enemy effective fire range, the max LZ slope and the squad posture (prone 0.5 m, crouched 1 m, standing 1.7 m).
+   **Building cover** (0 = off, 10 = max): buildings detected on the topographic HD map make walking along houses cheaper and reduce how much exposure counts there (walls give cover), so the paths are drawn towards built-up areas. Each card shows the metres walked along buildings. Tick *Detected buildings* in the map panel (SQUAD mode) to see what was detected. Buildings also **block enemy fire** where the line of fire passes less than 2 m above the ground (always on, whatever the slider): shooters higher up (towers, summits) can still fire over them. Along each path, **HC** squares mark **hard cover** spots (buildings right next to the path, at most one every 100 m), and each card gives their number.
 3. Click **Find LZs & covered paths**. The app:
    - computes where the squad can be shot from (purple zone), with the terrain as cover;
    - looks for landing zones in the ring that are flat, dry and out of small-arms fire, and flags those where air defence could see a helicopter landing;
@@ -44,13 +45,28 @@ The legend, the layer checkboxes and the hover info follow the selected mode. Th
 - **Route**: A* search on the grid. The cost combines distance, a very heavy penalty in exposed areas, height above the surroundings (ridges are penalized) and climbing. The path is then smoothed into straight legs without adding exposure.
 
 ## Data
+- `assets/buildings.js`: building map at 12.5 m (1 bit per cell), detected once from the grey squares of the topographic HD map (used by *Building cover*, fire occlusion below 2 m and hard-cover spots).
 - `v1/`: frozen copy of V1.
-- `assets/dem.js`: the app's only terrain dataset. HD Altis terrain exported from Arma 3 (`getTerrainHeightASL`), 614 × 614 points every 50 m, accurate to 0.1 m, on the Arma frame (0 to 30720 m, origin bottom-left).
+- `assets/dem.js`: the app's only terrain dataset. HD Altis terrain exported from Arma 3 (`getTerrainHeightASL`), 1228 × 1228 points every 25 m (exported with `afm_export_relief_25m.sqf`), accurate to 0.1 m, on the Arma frame (0 to 30720 m, origin bottom-left).
 - `assets/hd/`: **Topographic HD** and **Aerial HD** base maps extracted from the PLANOPS Atlas (zoom 5, about 2.5 m per pixel), as 4 × 4 mosaics of 3048 px per layer. They work offline. When you're online and zoom in further, the app also loads the finer tiles (topo up to ~1.3 m/px, aerial up to ~0.6 m/px). Alignment checked against the HD terrain (99% land/sea match). Content © Bohemia Interactive: for personal use only, don't redistribute.
 - `assets/satellite.webp`, `assets/carte.webp`: the original layer2 and layer1, still available.
 - `afm_export_relief.sqf`: the export script that produced the terrain dataset.
+- `afm_export_relief_25m.sqf`: 25 m terrain export in two parts (set `_part = 1`, then `2`; save as `relief25_part1.txt` / `relief25_part2.txt`).
+
+## Working resolution
+
+The squad planner runs on its own 12.5 m grid in a square around the AO (LZ max distance + 300 m on each side): terrain interpolated from the 25 m HD terrain, buildings from the 12.5 m map, line of sight blocked by terrain and by buildings below 2 m. The helicopter planner works directly on the 25 m terrain grid.
 
 ## V1 limitations
 - Vegetation and buildings don't hide the helicopter. Only the terrain counts.
 - AA ranges are approximate: adjust them to your mission.
 - Arma 3's low-altitude radar ground clutter is not modeled, so the model is conservative against radars.
+
+## V4 additions
+
+- **Terrain at 25 m** (1228 × 1228) for the helicopter; squad grid at 12.5 m around the AO with a 12.5 m building map.
+- **Number of infantry paths**: slider, 1 to 5 non-crossing routes.
+- **AO shooter height (towers, rooftops)**: 2 to 10 m (default 10 m) above the ground for AO shooters in the squad sight calculation. The altitude cap still applies to the ground they stand on.
+- **Placed heli LZ → infantry path**: when the helicopter LZ is placed by hand and an AO exists, a white covered foot path is computed from it to the AO ("HELI LZ (placed)" card). It ignores the LZ distance/slope rules and the other routes.
+- **Detected buildings** are drawn as black hatched footprints.
+- **Calculation mode** (Terrain section, also in Squad insertion): Fast = heli 100 m / squad 50 m, Standard (default) = heli 50 m / squad 25 m, Precise = heli 25 m / squad 12.5 m. Coarser grids are averaged from the 25 m terrain.
