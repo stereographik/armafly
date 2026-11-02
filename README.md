@@ -6,6 +6,8 @@ Helicopter flight planner for Arma 3. Place the **base**, the **landing zone (LZ
 Double-click `index.html` (Chrome, Edge or Firefox). Keep the `assets/` folder next to it.
 
 ## How to use it
+The left column has two tabs: **AO SET UP** (terrain, base & landing zone, air defence, flight settings) and **SQUADS PATH** (squad insertion, flight plan, exports and missions). The selected tab is remembered.
+
 1. **Base / LZ**: click *Base* or *LZ*, then click on the map. You can also type a grid (`036130`, `03601300` or `0360013000`). Markers can be dragged.
 2. **AA**: pick a type, then click *+ AA* and click on the map (or type a grid). Right-click an AA to delete it. Range and sensor height can be edited.
 3. **Settings**: height above ground, speed, caution, valley floor preference, climb penalty, **avoidance margin**. The avoidance margin makes the route keep its distance from batteries and from the edges of exposed areas, so it skirts threats tangentially (0 = off).
@@ -20,13 +22,13 @@ Double-click `index.html` (Chrome, Edge or Firefox). Keep the `assets/` folder n
 
 ## Squad insertion (V2)
 Plan where to drop a squad and how it reaches the objective under cover.
-1. Place the **AO** (AO mode). It is the objective. Enemies can be anywhere inside it, including its high ground. AA pits can also fire if the option is checked.
+1. Place the **AO** (AO mode). It is the objective. Enemies can be anywhere inside it, **but never higher than the ground at the AO marker**: AO positions on higher ground are ignored. AA pits can also fire if the option is checked.
 2. Set the LZ distance ring around the AO centre (min / max), the enemy effective fire range, the max LZ slope and the squad posture (prone 0.5 m, crouched 1 m, standing 1.7 m).
 3. Click **Find LZs & covered paths**. The app:
-   - computes where the squad can be shot from the AO (purple zone), with the terrain as cover;
+   - computes where the squad can be shot from (purple zone), with the terrain as cover;
    - looks for landing zones in the ring that are flat, dry and out of small-arms fire, and flags those where air defence could see a helicopter landing;
-   - finds the most covered foot path from each LZ to an assault position on the edge of the AO (slopes slow the squad down, water and cliffs are impassable);
-   - shows the **best LZ (A)** and **3 alternatives (B, C, D)** from the other directions around the AO (one per 90° sector), each with its own assault position. A dotted line marks the final assault to the AO centre.
+   - finds the most covered foot path from an LZ to an assault position on the edge of the AO (slopes slow the squad down, water and cliffs are impassable);
+   - then blocks that path and a corridor of about 100 m on each side, and searches again: **up to 5 routes (A to E) that never cross**, A being the best. Each has its own LZ (at least 500 m apart) and its own assault position. A dotted line marks the final assault to the AO centre.
 4. Each card gives the walk distance, estimated time, exposed metres (red on the map) and climb. **Fly heli here** sets that LZ as the helicopter destination, so the flight plan is computed to it.
 The results update automatically when you move the AO, the AA pits or change a setting.
 

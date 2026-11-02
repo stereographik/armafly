@@ -18,6 +18,12 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:13px/1.45 system-ui,'Segoe UI',sans-serif;overflow:hidden}
 body{display:grid;grid-template-columns:360px 1fr;height:100vh}
 aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.sidetabs{position:sticky;top:67px;z-index:2;display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border-bottom:1px solid var(--line)}
+.sidetabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--tx2);padding:11px 6px;font:700 14px var(--head);letter-spacing:.14em}
+.sidetabs button:hover{color:var(--tx);border-color:transparent}
+.sidetabs button.on{color:var(--amber2);border-bottom-color:var(--amber);background:var(--panel2)}
+.sidetabs button[data-tab=paths].on{color:#9be7ff;border-bottom-color:#38d3ff}
+.tabpane[hidden]{display:none}
 .brand{display:flex;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
 .logo{width:34px;height:34px;border:2px solid var(--amber);display:grid;place-items:center;color:var(--amber);font:700 18px var(--head);transform:rotate(45deg)}
 .logo span{transform:rotate(-45deg)}
@@ -112,6 +118,7 @@ dialog .row{justify-content:flex-end}
   main{grid-row:1;height:55vh;grid-template-rows:1fr 120px}
   aside{grid-row:2;border-right:0}
   .brand{position:static}
+  .sidetabs{top:0}
 }
 </style>
 </head>
@@ -119,6 +126,8 @@ dialog .row{justify-content:flex-end}
 <aside>
   <div class="brand"><div class="logo"><span>◆</span></div><div><h1>ARMAFLYMAP</h1><small>Terrain-masked flight &amp; squad insertion · Altis · V2</small></div></div>
 
+  <div class="sidetabs"><button data-tab="setup" class="on">AO SET UP</button><button data-tab="paths">SQUADS PATH</button></div>
+  <div class="tabpane" data-pane="setup">
   <section>
     <h2><span>01</span> Terrain</h2>
     <div id="demInfo" class="info">Loading…</div>
@@ -162,9 +171,11 @@ dialog .row{justify-content:flex-end}
     <label class="chk"><input type="checkbox" id="showGrid" checked> Show grid (1 km)</label>
   </section>
 
+  </div>
+  <div class="tabpane" data-pane="paths">
   <section>
-    <h2><span>06</span> Squad insertion <small style="color:var(--amber);font-family:var(--mono)">V2</small></h2>
-    <div class="hint" style="margin-top:0">Objective = the AO. Enemies anywhere inside it (and at the AA pits) can fire. Finds landing zones around the AO and the most covered foot path from each one, using the terrain as cover: the best one + 3 alternatives from other directions.</div>
+    <h2><span>05</span> Squad insertion <small style="color:var(--amber);font-family:var(--mono)">V2</small></h2>
+    <div class="hint" style="margin-top:0">Objective = the AO. Enemies anywhere inside it, but never higher than the ground at the AO marker, plus the AA pits, can fire. Finds up to 5 landing zones and the most covered foot path from each one, using the terrain as cover. The paths never cross: each new route avoids a corridor around the ones already chosen.</div>
     <div class="sl"><label>LZ distance from AO centre, min</label><output id="o_sq_rmin"></output><input type="range" id="sq_rmin" min="400" max="3000" step="100"></div>
     <div class="sl"><label>LZ distance from AO centre, max</label><output id="o_sq_rmax"></output><input type="range" id="sq_rmax" min="800" max="5000" step="100"></div>
     <div class="sl"><label>Enemy effective fire range</label><output id="o_sq_range"></output><input type="range" id="sq_range" min="300" max="1500" step="50"></div>
@@ -176,7 +187,7 @@ dialog .row{justify-content:flex-end}
   </section>
 
   <section>
-    <h2><span>05</span> Flight plan</h2>
+    <h2><span>06</span> Flight plan</h2>
     <button class="primary" id="btnPlan">Compute flight plan</button>
     <div id="summary"></div>
     <div class="row">
@@ -192,6 +203,7 @@ dialog .row{justify-content:flex-end}
     </div>
     <div id="wpTable"></div>
   </section>
+  </div>
 </aside>
 
 <main>
@@ -219,7 +231,7 @@ dialog .row{justify-content:flex-end}
        </div>
        <div class="lg-squad" style="margin-top:4px">
         <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:22px;height:8px;border-radius:2px;background:rgba(150,50,230,.55)"></span> enemy small-arms fire</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><span><b style="color:#ffcf3a">●</b> A best</span><span><b style="color:#38d3ff">●</b> B</span><span><b style="color:#c77dff">●</b> C</span><span><b style="color:#7dff8a">●</b> D</span><span><b style="color:#ff2b1c">━</b> exposed</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span><b style="color:#ffcf3a">●</b> A best</span><span><b style="color:#38d3ff">●</b> B</span><span><b style="color:#c77dff">●</b> C</span><span><b style="color:#7dff8a">●</b> D</span><span><b style="color:#ff8fb1">●</b> E</span><span><b style="color:#ff2b1c">━</b> exposed</span></div>
        </div>
       </div>
       <details style="margin:6px 0 0">
@@ -260,7 +272,7 @@ const AA_TYPES = [
   {id:'radar', name:'SAM + radar (Defender / Rhea / Nyx-R)', range:12000, sh:8},
   {id:'custom', name:'Custom', range:5000, sh:3},
 ];
-const P = {agl:40, speed:200, prud:6, valley:5, climb:4, standoff:4, showHeat:true, showTol:true, showSquad:true, readMode:'heli', showVis:true, showRange:true, showGrid:true,
+const P = {agl:40, speed:200, prud:6, valley:5, climb:4, standoff:4, showHeat:true, showTol:true, showSquad:true, readMode:'heli', sideTab:'setup', showVis:true, showRange:true, showGrid:true,
            bg:'topo', reliefOver:true, reliefOp:0.35};
 const S = {
   dem:null, sf:null, rel:null, vis:null, near:null, cost:null,
@@ -547,8 +559,10 @@ const fmtT = s => { s=Math.round(s); return Math.floor(s/60)+' min '+String(s%60
 // and the most covered foot path from each one to the objective (AO centre), using the terrain as cover.
 const SQP = {rmin:1000, rmax:2500, range:800, posture:1.0, maxSlope:10, useAA:true};
 const POSTURES = [{h:0.5,name:'Prone'},{h:1.0,name:'Crouched'},{h:1.7,name:'Standing'}];
-const SQ_COLORS = ['#ffcf3a','#38d3ff','#c77dff','#7dff8a'];
-const SQ_NAMES = ['A','B','C','D'];
+const SQ_COLORS = ['#ffcf3a','#38d3ff','#c77dff','#7dff8a','#ff8fb1'];
+const SQ_NAMES = ['A','B','C','D','E'];
+const SQ_MAX = 5;          // up to 5 non-crossing routes
+const SQ_CORRIDOR = 2;     // cells (×50 m) blocked on each side of a chosen path
 const SQ = {res:null, auto:false};
 function slopeMap(){
   if (S.slope) return S.slope;
@@ -557,11 +571,13 @@ function slopeMap(){
     const gx=(sf[k+1]-sf[k-1])/(2*step), gy=(sf[k+n]-sf[k-n])/(2*step); sl[k]=Math.atan(Math.hypot(gx,gy))*180/Math.PI; }
   return S.slope=sl;
 }
-// enemy shooters: spread over the AO + its high ground (eye height a bit higher on summits), plus the AA pits
+// enemy shooters: spread over the AO + its high ground, plus the AA pits.
+// AO positions are capped at the altitude of the AO marker: anything on higher ground than the marker is ignored.
 function squadObservers(){
-  const obs=[];
-  if (S.ao){ const pts=aoSamples(S.ao,false), highs=new Set(S.aoHighs||[]);
-    for (const p of pts) obs.push({x:p.x, y:p.y, sh:highs.has(p)?2.5:1.8}); }
+  const obs=[]; SQ.aoCap=null; SQ.aoDropped=0;
+  if (S.ao){ const pts=aoSamples(S.ao,false), highs=new Set(S.aoHighs||[]), cap=surfAt(S.ao.x,S.ao.y);
+    SQ.aoCap=cap;
+    for (const p of pts){ if (surfAt(p.x,p.y) > cap+0.5){ SQ.aoDropped++; continue; } obs.push({x:p.x, y:p.y, sh:highs.has(p)?2.5:1.8}); } }
   if (SQP.useAA) for (const a of S.aas) obs.push({x:a.x, y:a.y, sh:Math.max(1.8,a.sh)});
   return obs;
 }
@@ -584,63 +600,73 @@ function computeSquad(){
   const lzAir=new Uint8Array(N);
   if (S.aas.length) for (const a of S.aas) visFrom(a.x,a.y,a.sh,a.range,lzAir,null,10);
   else for (const p of aoSamples(ao,false)) visFrom(p.x,p.y,ao.sh,ao.range,null,lzAir,10);
-  // 4. Dijkstra from assault positions (ring just outside the AO); restricting the ring to a sector forces
-  //    each alternative to approach from its own direction instead of merging into the same final path
+  // 4. Dijkstra from assault positions (ring just outside the AO). Cells already used by a chosen path (plus a
+  //    corridor around it) are blocked, so the next route cannot cross or hug the previous ones.
   const DI=[1,-1,0,0,1,1,-1,-1], DJ=[0,0,1,-1,1,-1,1,-1], DL=[1,1,1,1,SQ2,SQ2,SQ2,SQ2].map(v=>v*step);
   const ringIn=ao.r+25, ringOut=ao.r+125, rc=Math.ceil(ringOut/step)+1, ci=Math.floor(ao.x/step), cj=Math.floor(ao.y/step);
   const bearingOf=(x,y)=>{ let b=Math.atan2(x-ao.x, y-ao.y)*180/Math.PI; return b<0?b+360:b; };
-  function dijkstra(sector){
+  const blocked=new Uint8Array(N);
+  function dijkstra(){
     const D=new Float64Array(N).fill(Infinity), from=new Int32Array(N).fill(-1), done=new Uint8Array(N), heap=new Heap();
     for (let j=Math.max(0,cj-rc);j<=Math.min(n-1,cj+rc);j++) for (let i=Math.max(0,ci-rc);i<=Math.min(n-1,ci+rc);i++){
       const x=(i+.5)*step, y=(j+.5)*step, d=Math.hypot(x-ao.x,y-ao.y), k=j*n+i;
-      if (d<ringIn || d>ringOut || !isFinite(cost[k])) continue;
-      if (sector!=null && angDiff(bearingOf(x,y),sector)>45) continue;
+      if (d<ringIn || d>ringOut || !isFinite(cost[k]) || blocked[k]) continue;
       D[k]=0; heap.push(k,0); }
     while (heap.size){ const k=heap.pop(); if (done[k]) continue; done[k]=1; const i=k%n, j=(k/n)|0;
       for (let d=0;d<8;d++){ const ni=i+DI[d], nj=j+DJ[d]; if (ni<0||nj<0||ni>=n||nj>=n) continue; const nk=nj*n+ni;
-        if (done[nk] || !isFinite(cost[nk])) continue;
+        if (done[nk] || !isFinite(cost[nk]) || blocked[nk]) continue;
         // no shortcut through the AO itself: the approach stays outside until the assault position
         if (Math.hypot((ni+.5)*step-ao.x,(nj+.5)*step-ao.y)<ringIn) continue;
         const nd=D[k]+DL[d]*(cost[k]+cost[nk])*0.5+0.5*Math.abs(sf[nk]-sf[k]);
         if (nd<D[nk]){ D[nk]=nd; from[nk]=k; heap.push(nk,nd); } } }
     return {D, from};
   }
-  // 5. landing zone candidates: ring around the AO, flat, dry, not under small-arms fire
+  // 5. landing zone candidates: ring around the AO, flat, dry, not under small-arms fire, away from the LZs already chosen
   const rmin=Math.max(SQP.rmin, ao.r+150), rmax=Math.max(rmin+300, SQP.rmax);
-  function candidates(D, sector){
+  function candidates(D, taken){
     const out=[];
     for (let j=1;j<n-1;j++){ const y=(j+.5)*step; if (Math.abs(y-ao.y)>rmax) continue;
       for (let i=1;i<n-1;i++){ const x=(i+.5)*step, dd=Math.hypot(x-ao.x,y-ao.y); if (dd<rmin||dd>rmax) continue;
-        const k=j*n+i; if (!isFinite(D[k]) || ex[k]) continue;
-        const bearing=bearingOf(x,y); if (sector!=null && angDiff(bearing,sector)>45) continue;
+        const k=j*n+i; if (!isFinite(D[k]) || ex[k] || blocked[k]) continue;
+        if (taken.some(t=>Math.hypot(t.x-x,t.y-y)<500)) continue;
         let flat=true; for (let b=-1;b<=1&&flat;b++) for (let a=-1;a<=1;a++){ const q=k+b*n+a; if (h[q]<0.5 || sl[q]>SQP.maxSlope){ flat=false; break; } }
         if (!flat) continue;
-        out.push({k, x, y, dist:dd, bearing, airSeen:lzAir[k]?1:0, score:D[k]+(lzAir[k]?4000:0)}); } }
+        out.push({k, x, y, dist:dd, bearing:bearingOf(x,y), airSeen:lzAir[k]?1:0, score:D[k]+(lzAir[k]?4000:0)}); } }
     return out.sort((a,b)=>a.score-b.score);
   }
-  const all=dijkstra(null), cAll=candidates(all.D,null);
-  if (!cAll.length) return {err:'No suitable LZ in this ring: widen the LZ distance or the max slope.'};
-  const best=cAll[0], picked=[{c:best, tree:all}];
-  for (let s=1;s<4;s++){ const sec=(best.bearing+90*s)%360, tree=dijkstra(sec), cs=candidates(tree.D,sec);
-    if (cs.length) picked.push({c:cs[0], tree}); }
-  // 6. paths and stats (approach = from the LZ to the assault position on the AO edge)
-  const routes=picked.map(({c,tree},idx)=>{
+  // 6. best route, block its corridor, next best route, ... up to SQ_MAX non-crossing routes
+  const routes=[]; let cands=0;
+  for (let idx=0; idx<SQ_MAX; idx++){
+    const tree=dijkstra(), cs=candidates(tree.D, routes);
+    if (idx===0) cands=cs.length;
+    if (!cs.length) break;
+    const c=cs[0];
     const cells=[]; for (let k=c.k; k!==-1; k=tree.from[k]) cells.push(k);
     const pts=cells.map(k=>({x:(k%n+.5)*step, y:(((k/n)|0)+.5)*step, k}));
     let walk=0, expo=0, time=0, maxSl=0, climb=0;
     for (let i=1;i<pts.length;i++){ const a=pts[i-1], b=pts[i], L=Math.hypot(b.x-a.x,b.y-a.y);
       walk+=L; if (ex[b.k]) expo+=L; maxSl=Math.max(maxSl,sl[b.k]); climb+=Math.max(0,sf[b.k]-sf[a.k]);
       const v=(SQP.posture<0.8?1.2:SQP.posture<1.4?3:4.5)/(1+(sl[b.k]/18)**2); time+=L/(v/3.6); }
-    const assault=pts[pts.length-1];
-    return {...c, idx, color:SQ_COLORS[idx], name:SQ_NAMES[idx], pts, assault, walk, expo, time, maxSl, climb};
-  });
-  const cands=cAll.length;
+    routes.push({...c, idx, color:SQ_COLORS[idx], name:SQ_NAMES[idx], pts, assault:pts[pts.length-1], walk, expo, time, maxSl, climb});
+    // block this path and a corridor around it for the next searches
+    for (const k of cells){ const i=k%n, j=(k/n)|0;
+      for (let b=-SQ_CORRIDOR;b<=SQ_CORRIDOR;b++) for (let a=-SQ_CORRIDOR;a<=SQ_CORRIDOR;a++){ const ii=i+a, jj=j+b; if (ii>=0&&jj>=0&&ii<n&&jj<n) blocked[jj*n+ii]=1; } }
+  }
+  if (!routes.length) return {err:'No suitable LZ in this ring: widen the LZ distance or the max slope.'};
   // infantry fire overlay
   const cv2=document.createElement('canvas'); cv2.width=cv2.height=n; const cx=cv2.getContext('2d'), im=cx.createImageData(n,n), px=im.data;
   for (let j=0;j<n;j++) for (let i=0;i<n;i++){ const k=j*n+i; if (!ex[k]) continue; const o=((n-1-j)*n+i)*4;
     px[o]=150; px[o+1]=50; px[o+2]=230; px[o+3]=Math.min(150, 60+ex[k]*6); }
   cx.putImageData(im,0,0);
-  return {routes, ex, obsCount:obs.length, cands, canvas:cv2, rmin, rmax};
+  return {routes, ex, obsCount:obs.length, cands, canvas:cv2, rmin, rmax, aoCap:SQ.aoCap, aoDropped:SQ.aoDropped};
+}
+function placeSideTabs(){ const b=document.querySelector('.brand'); document.querySelector('.sidetabs').style.top = (getComputedStyle(b).position==='sticky' ? b.offsetHeight : 0)+'px'; }
+window.addEventListener('resize', placeSideTabs);
+function setSideTab(t){
+  P.sideTab=t;
+  document.querySelectorAll('.sidetabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+  document.querySelectorAll('.tabpane').forEach(p=>p.hidden = p.dataset.pane!==t);
+  $('aside').scrollTop=0; saveState();
 }
 function setReadMode(m){
   P.readMode=m;
@@ -662,13 +688,13 @@ function renderSquad(){
   if (!r){ el.innerHTML=''; return; }
   if (r.err){ el.innerHTML=`<div class="hint" style="color:#ff9c90">${r.err}</div>`; return; }
   const v=t=>Math.round(t/60)+' min';
-  el.innerHTML = `<div class="hint">${r.obsCount} enemy positions · ${r.cands} possible LZs between ${(r.rmin/1000).toFixed(1)} and ${(r.rmax/1000).toFixed(1)} km · ${Math.round(SQ.ms)} ms</div>`+
+  el.innerHTML = `<div class="hint">${r.obsCount} enemy positions${r.aoCap!=null?` (AO fire capped at the marker altitude, ${Math.round(r.aoCap)} m: ${r.aoDropped} higher positions ignored)`:''} · ${r.cands} possible LZs between ${(r.rmin/1000).toFixed(1)} and ${(r.rmax/1000).toFixed(1)} km · ${r.routes.length} non-crossing route${r.routes.length>1?'s':''} · ${Math.round(SQ.ms)} ms</div>`+
     r.routes.map(rt=>`<div class="sqcard" style="border-left-color:${rt.color}">
       <div class="h"><span><b style="color:${rt.color}">LZ ${rt.name}</b>${rt.idx===0?' · <b>BEST</b>':''} · ${grid(rt.x,rt.y,4)}</span><span class="dir">from ${compass(rt.bearing)}</span></div>
       <div class="st"><span>walk <b>${(rt.walk/1000).toFixed(2)} km</b></span><span>assault pos. <b>${grid(rt.assault.x,rt.assault.y,4)}</b></span><span>≈ <b>${v(rt.time)}</b></span><span>exposed <b class="${rt.expo>0?'bad':'good'}">${rt.expo>0?Math.round(rt.expo)+' m':'none'}</b></span><span>climb <b>${Math.round(rt.climb)} m</b></span></div>
       ${rt.airSeen?'<div class="hint" style="color:#ffcf7a">⚠ air defence can see a helicopter landing here</div>':''}
       <div class="row" style="margin:5px 0 0"><button class="sm" data-focus="${rt.idx}">Show</button><button class="sm" data-fly="${rt.idx}">Fly heli here</button></div></div>`).join('')+
-    (r.routes.length<4?`<div class="hint">Only ${r.routes.length} sector${r.routes.length>1?'s':''} offer a usable LZ (sea, slopes or fire elsewhere).</div>`:'');
+    (r.routes.length<SQ_MAX?`<div class="hint">Only ${r.routes.length} non-crossing route${r.routes.length>1?'s':''} found: the other approaches are blocked by sea, slopes, enemy fire or the routes already chosen.</div>`:'');
   el.querySelectorAll('[data-focus]').forEach(b=>b.onclick=()=>{ const rt=r.routes[+b.dataset.focus]; const xs=rt.pts.map(p=>p.x), ys=rt.pts.map(p=>p.y);
     fitTo(Math.min(...xs)-400, Math.min(...ys)-400, Math.max(...xs)+400, Math.max(...ys)+400); });
   el.querySelectorAll('[data-fly]').forEach(b=>b.onclick=()=>{ const rt=r.routes[+b.dataset.fly]; S.lz={x:rt.x,y:rt.y}; changed('pts'); setReadMode('all'); toast(`Helicopter LZ set to LZ ${rt.name}: showing heli route and squad paths together`); });
@@ -1007,6 +1033,7 @@ $('#fitRoute').onclick=()=>{ if(!S.route) return; const xs=S.route.wps.map(p=>p.
 
 /* ====================== UI ====================== */
 document.querySelectorAll('.readmode button').forEach(b=>b.onclick=()=>setReadMode(b.dataset.rm));
+document.querySelectorAll('.sidetabs button').forEach(b=>b.onclick=()=>setSideTab(b.dataset.tab));
 document.querySelectorAll('.modes button').forEach(b=>b.onclick=()=>{ S.mode=b.dataset.mode; document.querySelectorAll('.modes button').forEach(x=>x.classList.toggle('on',x===b)); });
 AA_TYPES.forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=`${t.name} — ≈${t.range/1000} km`; $('#aaType').appendChild(o); });
 $('#aaType').value='aaa';
@@ -1204,7 +1231,7 @@ let toastT; function toast(m){ const t=$('#toast'); t.textContent=m; t.style.dis
   for (const [k,src] of [['sat','assets/satellite.webp'],['carte','assets/carte.webp']]){ const im=new Image(); im.onload=()=>draw(); im.src=src; S.imgs[k]=im; }
   store.del('dem'); // the bundled HD terrain is the only dataset
   if (!loadBundledDem()) $('#demInfo').innerHTML='<b style="color:#ff8a80">assets/dem.js not found</b> — keep the assets folder next to index.html.';
-  syncAlignUI(); updatePts(); renderAAList(); syncSquadUI(); setReadMode(P.readMode||'heli');
+  syncAlignUI(); updatePts(); renderAAList(); syncSquadUI(); setReadMode(P.readMode||'heli'); setSideTab(P.sideTab||'setup'); placeSideTabs();
   window.addEventListener('resize', resize); resize();
   $('#zfit').click();
   renderResults(0); schedule(true);
