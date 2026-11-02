@@ -62,11 +62,15 @@ The squad planner runs on its own 12.5 m grid in a square around the AO (LZ max 
 - AA ranges are approximate: adjust them to your mission.
 - Arma 3's low-altitude radar ground clutter is not modeled, so the model is conservative against radars.
 
-## V4 additions
+## V4 / V5 additions
 
 - **Terrain at 25 m** (1228 × 1228) for the helicopter; squad grid at 12.5 m around the AO with a 12.5 m building map.
 - **Number of infantry paths**: slider, 1 to 5 non-crossing routes.
 - **AO shooter height (towers, rooftops)**: 2 to 10 m (default 10 m) above the ground for AO shooters in the squad sight calculation. The altitude cap still applies to the ground they stand on.
-- **Placed heli LZ → infantry path**: when the helicopter LZ is placed by hand and an AO exists, a white covered foot path is computed from it to the AO ("HELI LZ (placed)" card). It ignores the LZ distance/slope rules and the other routes.
+- **Placed heli LZ → infantry path**: when the helicopter LZ is placed by hand, a white covered foot path is computed from it straight to the objective (or the AO edge) — "HELI LZ (placed)" card. It ignores the LZ distance/slope rules and the other routes.
 - **Detected buildings** are drawn as black hatched footprints.
 - **Calculation mode** (Terrain section, also in Squad insertion): Fast = heli 100 m / squad 50 m, Standard (default) = heli 50 m / squad 25 m, Precise = heli 25 m / squad 12.5 m. Coarser grids are averaged from the 25 m terrain.
+- **Objective marker** (★ Obj on the map toolbar, one only, drag to move, right-click to delete): every infantry path ends exactly there, including the white path from a hand-placed heli LZ. The paths stay apart until they reach the AO (or the last 300 m around the objective), then converge. Without an objective, paths stop at the AO edge as before. LZ distances are still measured from the AO centre (from the objective if there is no AO).
+- **Squad terrain detail**: the squad planner always reads the full 25 m HD terrain (whatever the calculation mode), its grid is aligned on the terrain samples, and the last 40 m of each line of sight is checked every 4 m, so ditches, banks and sunken roads hide the squad when they are deep enough in the data. Narrow ditches caught as chains of single low terrain samples are joined and carved into the squad grid so the channel stays continuous.
+- **Ditch cover** slider (0–10, default 5): prefers paths in ditches and low ground (cells below the median ground 25 m around them), like *Building cover* does for houses.
+- **Squad insertion switch** (top of the Squad insertion section): OFF stops all squad calculations and hides LZs, paths, fire zones and the objective; the SQUAD / ALL reading modes are disabled. The setting is remembered.

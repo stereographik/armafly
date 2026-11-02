@@ -31,6 +31,13 @@ aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto
 .brand small{color:var(--tx2);font-size:11px;letter-spacing:.04em}
 section{padding:14px 18px;border-bottom:1px solid var(--line)}
 h2{margin:0 0 10px;font:600 14px var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);display:flex;gap:8px;align-items:center}
+h2 .switch{margin-left:auto;display:flex;align-items:center;gap:7px;cursor:pointer;text-transform:none;letter-spacing:.08em}
+h2 .switch input{display:none}
+h2 .switch i{width:34px;height:18px;border-radius:9px;background:var(--line2);position:relative;transition:background .15s}
+h2 .switch i::after{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#cfd6db;transition:left .15s}
+h2 .switch input:checked+i{background:#38d3ff}
+h2 .switch input:checked+i::after{left:18px;background:#04141b}
+h2 .switch b{font:700 11px var(--mono);color:var(--tx2);width:24px}
 h2 span{color:var(--amber);font-family:var(--mono);font-size:11px}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .btn,button{background:var(--panel2);color:var(--tx);border:1px solid var(--line2);padding:6px 10px;font:600 12px var(--head);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:2px}
@@ -97,6 +104,7 @@ main{display:grid;grid-template-rows:1fr 170px;min-width:0;min-height:0}
 .hud b{color:var(--amber2)}
 .readmode{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:flex;background:rgba(13,17,20,.9);border:1px solid var(--line2);border-radius:3px;padding:3px;gap:3px;z-index:3}
 .readmode button{border:0;background:transparent;color:var(--tx2);padding:7px 14px;font:700 13px var(--head);letter-spacing:.12em}
+.readmode button:disabled{opacity:.3;cursor:not-allowed}
 .readmode button.on{background:var(--amber);color:#1a1205}
 .readmode button[data-rm=squad].on{background:#38d3ff;color:#04141b}
 .readmode button[data-rm=all].on{background:#d6dde2;color:#0d1114}
@@ -133,7 +141,7 @@ dialog .row{justify-content:flex-end}
 </head>
 <body>
 <aside>
-  <div class="brand"><div class="logo"><span>◆</span></div><div><h1>ARMAFLYMAP</h1><small>Terrain-masked flight &amp; squad insertion · Altis · V4</small></div></div>
+  <div class="brand"><div class="logo"><span>◆</span></div><div><h1>ARMAFLYMAP</h1><small>Terrain-masked flight &amp; squad insertion · Altis · V5</small></div></div>
 
   <div class="sidetabs"><button data-tab="setup" class="on">AO SET UP</button><button data-tab="paths">SQUADS PATH</button></div>
   <div class="tabpane" data-pane="setup">
@@ -177,7 +185,8 @@ dialog .row{justify-content:flex-end}
   </div>
   <div class="tabpane" data-pane="paths">
   <section>
-    <h2><span>05</span> Squad insertion <small style="color:var(--amber);font-family:var(--mono)">V2</small></h2>
+    <h2><span>05</span> Squad insertion <label class="switch" title="Turn squad insertion calculations and display on/off"><input type="checkbox" id="squadOn"><i></i><b id="squadOnTxt">ON</b></label></h2>
+    <div id="sqBody">
     <div class="hint" style="margin-top:0">Every path ends at the ★ objective (Obj tool on the map); without one, at the edge of the AO. Enemies anywhere inside it, but never on ground higher than the AO marker, can fire from up to the shooter height (towers, rooftops); the AA pits fire too. Finds up to 5 landing zones and the most covered foot path from each one, using the terrain as cover. The paths never cross: each new route avoids a corridor around the ones already chosen.</div>
     <div class="sl"><label>LZ distance from AO centre, min</label><output id="o_sq_rmin"></output><input type="range" id="sq_rmin" min="400" max="3000" step="100"></div>
     <div class="sl"><label>LZ distance from AO centre, max</label><output id="o_sq_rmax"></output><input type="range" id="sq_rmax" min="800" max="5000" step="100"></div>
@@ -185,12 +194,15 @@ dialog .row{justify-content:flex-end}
     <div class="sl"><label>Max LZ slope</label><output id="o_sq_slope"></output><input type="range" id="sq_slope" min="3" max="20" step="1"></div>
     <div class="sl"><label>AO shooter height (towers, rooftops)</label><output id="o_sq_tower"></output><input type="range" id="sq_tower" min="2" max="10" step="1"></div>
     <div class="sl"><label>Number of infantry paths</label><output id="o_sq_count"></output><input type="range" id="sq_count" min="1" max="5" step="1"></div>
+    <div class="sl"><label>Ditch cover (prefer ditches, banks, low ground)</label><output id="o_sq_ditch"></output><input type="range" id="sq_ditch" min="0" max="10" step="1"></div>
     <div class="sl"><label>Building cover (prefer paths along houses)</label><output id="o_sq_bld"></output><input type="range" id="sq_bld" min="0" max="10" step="1"></div>
     <div class="pt" style="grid-template-columns:auto 1fr;margin-top:8px"><span class="hint" style="margin:0">Calculation</span><select class="qsel"><option value="fast">Fast · heli 100 m · squad 50 m</option><option value="standard">Standard · heli 50 m · squad 25 m</option><option value="precise">Precise · heli 25 m · squad 12.5 m</option></select></div>
     <div class="pt" style="grid-template-columns:auto 1fr"><span class="hint" style="margin:0">Posture</span><select id="sq_posture"><option value="0.5">Prone (0.5 m)</option><option value="1">Crouched (1 m)</option><option value="1.7">Standing (1.7 m)</option></select></div>
     <label class="chk"><input type="checkbox" id="sq_useAA" checked> AA pits also fire on the squad</label>
     <button class="primary" id="btnSquad" style="margin-top:6px">Find LZs &amp; covered paths</button>
     <div id="sqResults"></div>
+    </div>
+    <div id="sqOff" class="hint" style="display:none">Squad insertion is off: no LZ search, no infantry paths, no fire zones. Turn it on to calculate them.</div>
   </section>
 
   <section>
@@ -290,7 +302,7 @@ const AA_TYPES = [
   {id:'radar', name:'SAM + radar (Defender / Rhea / Nyx-R)', range:12000, sh:8},
   {id:'custom', name:'Custom', range:5000, sh:3},
 ];
-const P = {agl:40, speed:200, prud:6, valley:5, climb:4, standoff:4, showHeat:true, showTol:true, showSquad:true, showBld:false, readMode:'heli', sideTab:'setup', layersCollapsed:false, quality:'standard', showVis:true, showRange:true, showGrid:true,
+const P = {agl:40, speed:200, prud:6, valley:5, climb:4, standoff:4, showHeat:true, showTol:true, showSquad:true, showBld:false, readMode:'heli', sideTab:'setup', squadOn:true, layersCollapsed:false, quality:'standard', showVis:true, showRange:true, showGrid:true,
            bg:'topo', reliefOver:true, reliefOp:0.35};
 const S = {
   dem:null, sf:null, rel:null, vis:null, near:null, cost:null,
@@ -358,6 +370,11 @@ function hAt(x,y){
   return (Hc(i,j)*(1-tx)+Hc(i+1,j)*tx)*(1-ty) + (Hc(i,j+1)*(1-tx)+Hc(i+1,j+1)*tx)*ty;
 }
 const surfAt = (x,y) => { const z=hAt(x,y); return z>0?z:0; };
+// always the finest terrain (25 m HD export), whatever the calculation mode: used by the squad planner
+function hFine(x,y){ const D=S.demFine||S.dem, n=D.n, st=D.step, fx=x/st-0.5, fy=y/st-0.5; let i=Math.floor(fx), j=Math.floor(fy); const tx=fx-i, ty=fy-j;
+  const H=(a,b)=>D.h[Math.max(0,Math.min(n-1,b))*n+Math.max(0,Math.min(n-1,a))];
+  return (H(i,j)*(1-tx)+H(i+1,j)*tx)*(1-ty) + (H(i,j+1)*(1-tx)+H(i+1,j+1)*tx)*ty; }
+const sFine=(x,y)=>{ const z=hFine(x,y); return z>0?z:0; };
 function cellOf(x,y){ const d=S.dem; let i=Math.floor(x/d.step), j=Math.floor(y/d.step); i=Math.max(0,Math.min(d.n-1,i)); j=Math.max(0,Math.min(d.n-1,j)); return j*d.n+i; }
 
 // Relative relief: height vs local mean (~600 m) -> > 0 on ridges, < 0 in valleys
@@ -598,7 +615,7 @@ const fmtT = s => { s=Math.round(s); return Math.floor(s/60)+' min '+String(s%60
 /* ====================== V2 · SQUAD INSERTION ====================== */
 // Enemies anywhere in the AO (and at AA pits) fire on the squad. We look for helicopter landing zones around the AO
 // and the most covered foot path from each one to the objective (AO centre), using the terrain as cover.
-const SQP = {rmin:1000, rmax:2500, range:800, posture:1.0, maxSlope:10, useAA:true, bldW:5, count:5, tower:10};
+const SQP = {rmin:1000, rmax:2500, range:800, posture:1.0, maxSlope:10, useAA:true, bldW:5, count:5, tower:10, ditchW:5};
 const POSTURES = [{h:0.5,name:'Prone'},{h:1.0,name:'Crouched'},{h:1.7,name:'Standing'}];
 const SQ_COLORS = ['#ffcf3a','#38d3ff','#c77dff','#7dff8a','#ff8fb1'];
 const SQ_NAMES = ['A','B','C','D','E'];
@@ -653,13 +670,28 @@ function computeSquad(){
   let gx0=ao.x-half, gy0=ao.y-half, gx1=ao.x+half, gy1=ao.y+half;
   if (ob){ gx0=Math.min(gx0,ob.x-300); gy0=Math.min(gy0,ob.y-300); gx1=Math.max(gx1,ob.x+300); gy1=Math.max(gy1,ob.y+300); }
   gx0=Math.max(0,gx0); gy0=Math.max(0,gy0); gx1=Math.min(30720,gx1); gy1=Math.min(30720,gy1);
+  { const fs=(S.demFine||S.dem).step, snap=v=>Math.floor((v-fs/2+g/2)/fs)*fs+fs/2-g/2; gx0=Math.max(-g/2,snap(gx0)); gy0=Math.max(-g/2,snap(gy0)); }
   const nx=Math.ceil((gx1-gx0)/g), ny=Math.ceil((gy1-gy0)/g), N=nx*ny;
   const X=i=>gx0+(i+.5)*g, Y=j=>gy0+(j+.5)*g;
   const inGrid=(x,y)=>x>=gx0&&y>=gy0&&x<gx0+nx*g&&y<gy0+ny*g;
   const cellL=(x,y)=>{ const i=Math.max(0,Math.min(nx-1,Math.floor((x-gx0)/g))), j=Math.max(0,Math.min(ny-1,Math.floor((y-gy0)/g))); return j*nx+i; };
   // terrain, buildings, slope
   const hh=new Float32Array(N), sf=new Float32Array(N), bl=new Uint8Array(N), sl=new Float32Array(N);
-  for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const k=j*nx+i, x=X(i), y=Y(j); hh[k]=hAt(x,y); sf[k]=Math.max(0,hh[k]); bl[k]=bldAt(x,y); }
+  for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const k=j*nx+i, x=X(i), y=Y(j); hh[k]=hFine(x,y); sf[k]=Math.max(0,hh[k]); bl[k]=bldAt(x,y); }
+  // ditches: the HD terrain often catches a narrow ditch as a chain of single low samples; join neighbouring low samples
+  // and carve the channel into the squad grid so it stays continuous (a soldier can walk and hide along its bottom)
+  { const D=S.demFine||S.dem, n=D.n, st=D.step, H=(i,j)=>D.h[Math.max(0,Math.min(n-1,j))*n+Math.max(0,Math.min(n-1,i))];
+    const i0=Math.max(1,Math.floor(gx0/st)), i1=Math.min(n-2,Math.ceil((gx0+nx*g)/st)), j0=Math.max(1,Math.floor(gy0/st)), j1=Math.min(n-2,Math.ceil((gy0+ny*g)/st));
+    const W=i1-i0+1, low=new Uint8Array(W*(j1-j0+1)), nb=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]], v=new Float32Array(8);
+    for (let j=j0;j<=j1;j++) for (let i=i0;i<=i1;i++){ const h=H(i,j); if (h<0.5) continue; for (let a=0;a<8;a++) v[a]=H(i+nb[a][0],j+nb[a][1]); v.sort(); if ((v[3]+v[4])/2-h>1.5) low[(j-j0)*W+i-i0]=1; }
+    for (let j=j0;j<=j1;j++) for (let i=i0;i<=i1;i++){ if (!low[(j-j0)*W+i-i0]) continue;
+      for (let a=0;a<4;a++){ const ii=i+nb[a][0], jj=j+nb[a][1]; if (ii>i1||jj>j1||ii<i0||jj<j0) continue;
+        if (!low[(jj-j0)*W+ii-i0]) continue;
+        const xa=(i+.5)*st, ya=(j+.5)*st, xb=(ii+.5)*st, yb=(jj+.5)*st, ha=H(i,j), hb=H(ii,jj), L=Math.hypot(xb-xa,yb-ya), ns=Math.ceil(L/(g*0.4));
+        for (let s=0;s<=ns;s++){ const t=s/ns, px=xa+(xb-xa)*t, py=ya+(yb-ya)*t; if (!inGrid(px,py)) continue; const q=cellL(px,py), z=ha+(hb-ha)*t;
+          if (z<hh[q]){ hh[q]=z; sf[q]=Math.max(0,z); } } } }
+    // the samples themselves
+    for (let j=j0;j<=j1;j++) for (let i=i0;i<=i1;i++){ if (!low[(j-j0)*W+i-i0]) continue; const px=(i+.5)*st, py=(j+.5)*st; if (!inGrid(px,py)) continue; const q=cellL(px,py), z=H(i,j); if (z<hh[q]){ hh[q]=z; sf[q]=Math.max(0,z); } } }
   for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const k=j*nx+i;
     const gx=(sf[j*nx+Math.min(nx-1,i+1)]-sf[j*nx+Math.max(0,i-1)])/(2*g), gy=(sf[Math.min(ny-1,j+1)*nx+i]-sf[Math.max(0,j-1)*nx+i])/(2*g);
     sl[k]=Math.atan(Math.hypot(gx,gy))*180/Math.PI; }
@@ -670,11 +702,16 @@ function computeSquad(){
     for (let i=0;i<nx;i++){ const ia=Math.max(0,i-R), ib=Math.min(nx-1,i+R);
       const s=I[(jb+1)*W1+ib+1]-I[ja*W1+ib+1]-I[(jb+1)*W1+ia]+I[ja*W1+ia];
       cov[j*nx+i]=Math.min(1, s/((jb-ja+1)*(ib-ia+1))*6); } }
+  // ditch / low-ground cover: how far the cell sits below the median ground 25 m around it (HD terrain)
+  const dch=new Float32Array(N), dep=new Float32Array(N), dw=(SQP.ditchW??5)/10, ring=[0,1,2,3,4,5,6,7].map(a=>[Math.cos(a*Math.PI/4)*25, Math.sin(a*Math.PI/4)*25]), rv=new Float32Array(8);
+  for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const k=j*nx+i; if (hh[k]<0.3) continue; const x=X(i), y=Y(j);
+    for (let a=0;a<8;a++) rv[a]=hFine(x+ring[a][0], y+ring[a][1]); rv.sort();
+    dep[k]=(rv[3]+rv[4])/2-hh[k]; dch[k]=Math.max(0, Math.min(1, (dep[k]-0.5)/2.5)); }
   // 1. where the squad can be shot from: terrain blocks, buildings block below 2 m above the ground
   const ex=new Uint8Array(N), obs=squadObservers(), rng=SQP.range, tH=SQP.posture;
   for (const o of obs){
     if (o.x<gx0-rng || o.y<gy0-rng || o.x>gx1+rng || o.y>gy1+rng) continue;
-    const z0=surfAt(o.x,o.y)+o.sh, ok0=inGrid(o.x,o.y)?cellL(o.x,o.y):-1;
+    const z0=sFine(o.x,o.y)+o.sh, ok0=inGrid(o.x,o.y)?cellL(o.x,o.y):-1;
     const i0=Math.max(0,Math.floor((o.x-rng-gx0)/g)), i1=Math.min(nx-1,Math.floor((o.x+rng-gx0)/g));
     const j0=Math.max(0,Math.floor((o.y-rng-gy0)/g)), j1=Math.min(ny-1,Math.floor((o.y+rng-gy0)/g));
     for (let j=j0;j<=j1;j++){ const dy=Y(j)-o.y;
@@ -682,18 +719,20 @@ function computeSquad(){
         const k=j*nx+i; if (hh[k]<0.3) continue;
         const z1=hh[k]+tH, d=Math.sqrt(d2), ns=Math.ceil(d/(g*0.8));
         let ok=true;
-        for (let s=1;s<ns;s++){ const t=s/ns, px=o.x+dx*t, py=o.y+dy*t, zr=z0+(z1-z0)*t;
+        // micro-relief next to the target (ditches, banks, sunken roads): HD terrain every 4 m over the last 40 m
+        if (dep[k]>0.3) for (let e=4; e<=40 && e<d-g; e+=4){ const t=1-e/d, zr=z0+(z1-z0)*t; if (sFine(o.x+dx*t, o.y+dy*t)>zr){ ok=false; break; } }
+        if (ok) for (let s=1;s<ns;s++){ const t=s/ns, px=o.x+dx*t, py=o.y+dy*t, zr=z0+(z1-z0)*t;
           if (inGrid(px,py)){ const q=cellL(px,py), gr=sf[q];
             if (gr>zr || (bl[q] && q!==k && q!==ok0 && zr-gr<2)){ ok=false; break; } }
-          else if (surfAt(px,py)>zr){ ok=false; break; } }
+          else if (sFine(px,py)>zr){ ok=false; break; } }
         if (ok && ex[k]<255) ex[k]++; } } }
-  // 2. walking cost: slopes slow down, water & cliffs impassable, exposure penalised; houses give cover (slider)
+  // 2. walking cost: slopes slow down, water & cliffs impassable, exposure penalised; houses and ditches give cover (sliders)
   const W=60, cost=new Float32Array(N), bw=(SQP.bldW||0)/10;
   for (let k=0;k<N;k++){
     if (hh[k]<0.3 || sl[k]>35){ cost[k]=Infinity; continue; }
-    const cv=cov[k]*bw;
-    let c=(1+2*(sl[k]/20)**2)*(1-0.6*cv);
-    if (ex[k]) c+=W*Math.min(3,1+0.25*(ex[k]-1))*(1-0.75*cv);
+    const cv=cov[k]*bw, cd=dch[k]*dw;
+    let c=(1+2*(sl[k]/20)**2)*(1-0.6*cv)*(1-0.4*cd);
+    if (ex[k]) c+=W*Math.min(3,1+0.25*(ex[k]-1))*(1-0.75*cv)*(1-0.7*cd);
     cost[k]=c; }
   // 3. LZ air check (global terrain grid): can air defence see a helicopter landing there (10 m above ground)?
   const nG=S.dem.n, lzAir=new Uint8Array(nG*nG);
@@ -706,9 +745,10 @@ function computeSquad(){
   const dAO=new Float32Array(N); for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) dAO[j*nx+i]=Math.hypot(X(i)-ao.x,Y(j)-ao.y);
   const bearingOf=(x,y)=>{ let b=Math.atan2(x-ao.x, y-ao.y)*180/Math.PI; return b<0?b+360:b; };
   const blocked=new Uint8Array(N);
-  function dijkstra(){
+  function dijkstra(seed){
     const D=new Float64Array(N).fill(Infinity), from=new Int32Array(N).fill(-1), done=new Uint8Array(N), heap=new Heap();
-    if (ob){ const k=cellL(ob.x,ob.y); D[k]=0; heap.push(k,0); }
+    if (seed!=null){ D[seed]=0; heap.push(seed,0); }
+    else if (ob){ const k=cellL(ob.x,ob.y); D[k]=0; heap.push(k,0); }
     else for (let k=0;k<N;k++) if (dAO[k]>=ringIn && dAO[k]<=ringOut && isFinite(cost[k]) && !blocked[k]){ D[k]=0; heap.push(k,0); }
     while (heap.size){ const k=heap.pop(); if (done[k]) continue; done[k]=1; const i=k%nx, j=(k/nx)|0;
       for (let d=0;d<8;d++){ const ni=i+DI[d], nj=j+DJ[d]; if (ni<0||nj<0||ni>=nx||nj>=ny) continue; const nk=nj*nx+ni;
@@ -767,11 +807,16 @@ function computeSquad(){
     const k0=cellL(S.lz.x,S.lz.y);
     if (ob ? Math.hypot(S.lz.x-ob.x,S.lz.y-ob.y)<50 : dAO[k0]<=ringOut) manual={err:'The heli LZ is at the objective itself: no approach path needed.'};
     else if (!isFinite(cost[k0])) manual={err:'The heli LZ is on water or a cliff: no foot path from it.'};
-    else { blocked.fill(0); const tree=dijkstra();
-      if (!isFinite(tree.D[k0])) manual={err:'No foot path from the heli LZ to the AO.'};
-      else { const cells=[]; for (let k=k0; k!==-1; k=tree.from[k]) cells.push(k);
-        manual={k:k0, x:S.lz.x, y:S.lz.y, dist:dAO[k0], bearing:bearingOf(S.lz.x,S.lz.y), airSeen:airAt(S.lz.x,S.lz.y)?1:0, idx:'m', color:'#ffffff', name:'HELI', manual:true, ...routeStats(cells)};
-        manual.pts[0]={...manual.pts[0], x:S.lz.x, y:S.lz.y}; } } }
+    else { blocked.fill(0);
+      // its own covered path, straight to the objective (or the AO edge)
+      const near=null;
+      const tree=near ? dijkstra(near.k) : dijkstra();
+      if (!isFinite(tree.D[k0])) manual={err:near?'No foot path from the heli LZ to LZ '+near.name+'.':'No foot path from the heli LZ to the AO.'};
+      else { const link=[]; for (let k=k0; k!==-1; k=tree.from[k]) link.push(k);
+        const cells=near ? link.concat(near.pts.slice(1).map(p=>p.k)) : link;
+        manual={k:k0, x:S.lz.x, y:S.lz.y, dist:dAO[k0], bearing:bearingOf(S.lz.x,S.lz.y), airSeen:airAt(S.lz.x,S.lz.y)?1:0, idx:'m', color:'#ffffff', name:'HELI', manual:true, joins:near?near.name:null, ...routeStats(cells)};
+        manual.pts[0]={...manual.pts[0], x:S.lz.x, y:S.lz.y};
+        if (near){ manual.drawPts=manual.pts.slice(0,link.length); manual.link=routeStats(link).walk; } } } }
   else if (S.lz && !inGrid(S.lz.x,S.lz.y)) manual={err:'The heli LZ is more than '+((half)/1000).toFixed(1)+' km from the AO: outside the squad grid.'};
   if (ob && !isFinite(cost[cellL(ob.x,ob.y)])) return {err:'The objective is on water or a cliff: move it.'};
   if (!routes.length && !(manual && !manual.err)) return {err:'No suitable LZ in this ring: widen the LZ distance or the max slope.'};
@@ -801,7 +846,7 @@ function setReadMode(m){
   saveState(); draw();
 }
 function runSquad(){
-  if (!S.dem) return;
+  if (!S.dem || P.squadOn===false) return;
   if (!S.vis) computeVis();
   const t0=performance.now(); SQ.res=computeSquad(); SQ.ms=performance.now()-t0; SQ.auto=!SQ.res.err;
   if (!SQ.res.err && P.readMode==='heli') setReadMode(S.base?'all':'squad');
@@ -822,8 +867,9 @@ function renderSquad(){
   el.innerHTML = `<div class="hint">${r.obsCount} enemy positions${r.aoCap!=null?` (AO fire capped at the marker altitude, ${Math.round(r.aoCap)} m: ${r.aoDropped} higher positions ignored)`:''} · ${r.cands} possible LZs between ${(r.rmin/1000).toFixed(1)} and ${(r.rmax/1000).toFixed(1)} km · ${r.routes.length} non-crossing route${r.routes.length>1?'s':''} · grid ${r.step} m · ${Math.round(SQ.ms)} ms</div>`+
     (r.manual&&r.manual.err?`<div class="hint" style="color:#ffcf7a">${r.manual.err}</div>`:'')+
     [...(r.manual&&!r.manual.err?[r.manual]:[]), ...r.routes].map(rt=>`<div class="sqcard" style="border-left-color:${rt.color}">
-      <div class="h"><span><b style="color:${rt.color}">${rt.manual?'HELI LZ (placed)':'LZ '+rt.name}</b>${rt.idx===0?' · <b>BEST</b>':''} · ${grid(rt.x,rt.y,4)}</span><span class="dir">from ${compass(rt.bearing)}</span></div>
+      <div class="h"><span><b style="color:${rt.color}">${rt.manual?'HELI LZ (placed)'+(rt.joins?' → LZ '+rt.joins:''):'LZ '+rt.name}</b>${rt.idx===0?' · <b>BEST</b>':''} · ${grid(rt.x,rt.y,4)}</span><span class="dir">from ${compass(rt.bearing)}</span></div>
       <div class="st"><span>walk <b>${(rt.walk/1000).toFixed(2)} km</b></span><span>assault pos. <b>${grid(rt.assault.x,rt.assault.y,4)}</b></span><span>≈ <b>${v(rt.time)}</b></span><span>exposed <b class="${rt.expo>0?'bad':'good'}">${rt.expo>0?Math.round(rt.expo)+' m':'none'}</b></span><span>climb <b>${Math.round(rt.climb)} m</b></span><span>along buildings <b>${Math.round(rt.built)} m</b></span><span>hard cover <b>${rt.hard.length} spot${rt.hard.length===1?'':'s'}</b></span></div>
+      ${rt.joins?`<div class="hint" style="margin:2px 0 0">${Math.round(rt.link)} m to LZ ${rt.joins}, then its covered path (totals include both)</div>`:''}
       ${rt.airSeen?'<div class="hint" style="color:#ffcf7a">⚠ air defence can see a helicopter landing here</div>':''}
       <div class="row" style="margin:5px 0 0"><button class="sm" data-focus="${rt.idx}">Show</button>${rt.manual?'':`<button class="sm" data-fly="${rt.idx}">Fly heli here</button>`}</div></div>`).join('')+
     (r.routes.length<Math.min(SQ_MAX,SQP.count||SQ_MAX)?`<div class="hint">Only ${r.routes.length} non-crossing route${r.routes.length>1?'s':''} found: the other approaches are blocked by sea, slopes, enemy fire or the routes already chosen.</div>`:'');
@@ -833,24 +879,25 @@ function renderSquad(){
 }
 function drawSquad(){
   if (P.showBld && bldRaster() && S.bldCanvas) drawBuildings();
-  const r=SQ.res; if (!r || r.err || !P.showSquad) return;
+  const r=SQ.res; if (!r || r.err || !P.showSquad || P.squadOn===false) return;
   const [x0,y0]=W2S(r.rect.x0,r.rect.y1), [x1,y1]=W2S(r.rect.x1,r.rect.y0);
   ctx.imageSmoothingEnabled=false; ctx.drawImage(r.canvas,x0,y0,x1-x0,y1-y0); ctx.imageSmoothingEnabled=true;
   ctx.lineJoin='round'; ctx.lineCap='round';
   for (const rt of [...r.routes].reverse().concat(r.manual&&!r.manual.err?[r.manual]:[])){
-    ctx.beginPath(); rt.pts.forEach((p,i)=>{ const [x,y]=W2S(p.x,p.y); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    const dp=rt.drawPts||rt.pts;
+    ctx.beginPath(); dp.forEach((p,i)=>{ const [x,y]=W2S(p.x,p.y); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
     ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.lineWidth=(rt.idx===0?7:5.5)*DPR; ctx.stroke();
     ctx.strokeStyle=rt.color; ctx.lineWidth=(rt.idx===0?4:2.5)*DPR; ctx.setLineDash(rt.idx===0?[]:[10*DPR,5*DPR]); ctx.stroke(); ctx.setLineDash([]);
     // exposed stretches
     ctx.strokeStyle='#ff2b1c'; ctx.lineWidth=3*DPR;
-    for (let i=1;i<rt.pts.length;i++){ if (!r.ex[rt.pts[i].k]) continue;
-      const [ax,ay]=W2S(rt.pts[i-1].x,rt.pts[i-1].y), [bx,by]=W2S(rt.pts[i].x,rt.pts[i].y); ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke(); }
+    for (let i=1;i<dp.length;i++){ if (!r.ex[dp[i].k]) continue;
+      const [ax,ay]=W2S(dp[i-1].x,dp[i-1].y), [bx,by]=W2S(dp[i].x,dp[i].y); ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke(); }
     // final assault from the assault position to the objective
-    { const [ax,ay]=W2S(rt.assault.x,rt.assault.y), [ox,oy]=r.obj?[ax,ay]:W2S(S.ao.x,S.ao.y);
+    if (!rt.drawPts){ const [ax,ay]=W2S(rt.assault.x,rt.assault.y), [ox,oy]=r.obj?[ax,ay]:W2S(S.ao.x,S.ao.y);
       ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ox,oy); ctx.strokeStyle=rt.color; ctx.lineWidth=1.5*DPR; ctx.setLineDash([3*DPR,4*DPR]); ctx.stroke(); ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(ax,ay,4.5*DPR,0,7); ctx.fillStyle='#0b0f12'; ctx.fill(); ctx.strokeStyle=rt.color; ctx.lineWidth=2*DPR; ctx.stroke(); }
     // hard cover spots
-    for (const hc of rt.hard){ const [hx,hy]=W2S(hc.x,hc.y), q=5*DPR;
+    for (const hc of rt.hard){ if (rt.drawPts && hc.along>rt.link+1) continue; const [hx,hy]=W2S(hc.x,hc.y), q=5*DPR;
       ctx.fillStyle='#d6dde2'; ctx.fillRect(hx-q,hy-q,2*q,2*q); ctx.strokeStyle=rt.color; ctx.lineWidth=2.2*DPR; ctx.strokeRect(hx-q,hy-q,2*q,2*q);
       ctx.fillStyle='#0b0f12'; ctx.font=`700 ${7*DPR}px Rajdhani, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('HC',hx,hy+0.5*DPR); }
     // LZ marker (the placed heli LZ already has its own marker)
@@ -990,7 +1037,7 @@ function draw(){
   // base / LZ
   if (S.base){ const [x,y]=W2S(S.base.x,S.base.y), s=10*DPR; ctx.fillStyle='#4aa3ff'; ctx.strokeStyle='#04111f'; ctx.lineWidth=2*DPR; ctx.fillRect(x-s,y-s,2*s,2*s); ctx.strokeRect(x-s,y-s,2*s,2*s);
     ctx.fillStyle='#04111f'; ctx.font=`700 ${11*DPR}px Rajdhani, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('B',x,y+DPR); label(x+14*DPR,y-12*DPR,'BASE','#9fd0ff'); }
-  if (S.obj){ const [x,y]=W2S(S.obj.x,S.obj.y), R=13*DPR, r2=5.5*DPR; ctx.beginPath();
+  if (S.obj && P.squadOn!==false){ const [x,y]=W2S(S.obj.x,S.obj.y), R=13*DPR, r2=5.5*DPR; ctx.beginPath();
     for (let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r2:R; ctx.lineTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr); } ctx.closePath();
     ctx.fillStyle='#ffd23a'; ctx.fill(); ctx.strokeStyle='#1a1205'; ctx.lineWidth=2*DPR; ctx.stroke(); label(x+15*DPR,y-12*DPR,'OBJECTIVE','#ffd23a'); }
   if (S.lz){ const [x,y]=W2S(S.lz.x,S.lz.y), s=11*DPR; ctx.beginPath(); ctx.arc(x,y,s,0,7); ctx.fillStyle='#47d18c'; ctx.fill(); ctx.strokeStyle='#03170c'; ctx.lineWidth=2*DPR; ctx.stroke();
@@ -1115,7 +1162,7 @@ function hitTest(sx,sy){
   const near=(p)=>{ const [x,y]=W2S(p.x,p.y); return Math.hypot(x-sx*DPR,y-sy*DPR)<14*DPR; };
   if (S.base && near(S.base)) return {t:'base'};
   if (S.lz && near(S.lz)) return {t:'lz'};
-  if (S.obj && near(S.obj)) return {t:'obj'};
+  if (S.obj && P.squadOn!==false && near(S.obj)) return {t:"obj"};
   for (let i=S.aas.length-1;i>=0;i--) if (near(S.aas[i])) return {t:'aa', i};
   if (S.ao && near(S.ao)) return {t:'ao'};
   return null;
@@ -1129,7 +1176,7 @@ cv.addEventListener('pointermove', e=>{
   const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top, w=S2W(sx,sy);
   if (S.dem){ const z=hAt(w.x,w.y), inside=w.x>=0&&w.y>=0&&w.x<=30720&&w.y<=30720;
     const kc = inside ? cellOf(w.x,w.y) : -1, v = S.vis && inside ? S.vis[kc] : 0;
-    const f = SQ.res && !SQ.res.err && inside ? SQ.res.exAt(w.x,w.y) : 0, rm=P.readMode;
+    const f = P.squadOn!==false && SQ.res && !SQ.res.err && inside ? SQ.res.exAt(w.x,w.y) : 0, rm=P.readMode;
     const airTxt = v && rm!=='squad' ? ` · <span style="color:#ff6b5e">seen by ${v} AA at ${P.agl} m AGL</span>` : '';
     const sqTxt = f && rm!=='heli' ? ` · <span style="color:#c99bff">under fire from ${f} enemy position${f>1?'s':''}</span>` : '';
     $('#hud').innerHTML = inside ? `Grid <b>${grid(w.x,w.y,4)}</b> · X ${Math.round(w.x)} Y ${Math.round(w.y)} · alt <b>${Math.max(0,Math.round(z))} m</b>${airTxt}${sqTxt}` : 'Off map'; }
@@ -1244,7 +1291,7 @@ function run(){
     const t0=performance.now();
     if (!S.vis) computeVis();
     computeCost();
-    if (SQ.auto || ((S.ao||S.obj) && S.lz)){ const t1=performance.now(); SQ.res=computeSquad(); SQ.ms=performance.now()-t1; SQ.auto=!SQ.res.err;
+    if (P.squadOn!==false && (SQ.auto || ((S.ao||S.obj) && S.lz))){ const t1=performance.now(); SQ.res=computeSquad(); SQ.ms=performance.now()-t1; SQ.auto=!SQ.res.err;
       if (followBest()) updatePts(); renderSquad(); }
     if (S.base && S.lz){ S.route = plan(); }
     saveState();
@@ -1253,14 +1300,14 @@ function run(){
   }, 20);
 }
 // squad settings UI
-const SQ_SL={sq_rmin:['rmin',v=>(v/1000).toFixed(1)+' km'], sq_rmax:['rmax',v=>(v/1000).toFixed(1)+' km'], sq_range:['range',v=>v+' m'], sq_slope:['maxSlope',v=>v+'°'], sq_bld:['bldW',v=>v===0?'off':v], sq_count:['count',v=>v], sq_tower:['tower',v=>v+' m']};
+const SQ_SL={sq_rmin:['rmin',v=>(v/1000).toFixed(1)+' km'], sq_rmax:['rmax',v=>(v/1000).toFixed(1)+' km'], sq_range:['range',v=>v+' m'], sq_slope:['maxSlope',v=>v+'°'], sq_bld:['bldW',v=>v===0?'off':v], sq_count:['count',v=>v], sq_tower:['tower',v=>v+' m'], sq_ditch:['ditchW',v=>v===0?'off':v]};
 function syncSquadUI(){ for (const id in SQ_SL){ const [k,f]=SQ_SL[id]; $('#'+id).value=SQP[k]; $('#o_'+id).textContent=f(SQP[k]); }
   $('#sq_posture').value=String(SQP.posture); $('#sq_useAA').checked=SQP.useAA; }
 for (const id in SQ_SL){ const [k,f]=SQ_SL[id]; $('#'+id).oninput=e=>{ SQP[k]=+e.target.value; $('#o_'+id).textContent=f(SQP[k]); };
   $('#'+id).onchange=()=>{ if (SQP.rmax<SQP.rmin+300){ SQP.rmax=SQP.rmin+300; syncSquadUI(); } saveState(); if (SQ.auto) runSquad(); }; }
 $('#sq_posture').onchange=e=>{ SQP.posture=+e.target.value; saveState(); if (SQ.auto) runSquad(); };
 $('#sq_useAA').onchange=e=>{ SQP.useAA=e.target.checked; saveState(); if (SQ.auto) runSquad(); };
-$('#btnSquad').onclick=()=>{ if (!S.ao && !S.obj) return toast('Place the AO or the objective first'); S.lzManual=false; $('#busy').style.display='block'; setTimeout(()=>{ runSquad(); saveState(); $('#busy').style.display='none'; },20); };
+$('#btnSquad').onclick=()=>{ if (P.squadOn===false) return; if (!S.ao && !S.obj) return toast('Place the AO or the objective first'); S.lzManual=false; $('#busy').style.display='block'; setTimeout(()=>{ runSquad(); saveState(); $('#busy').style.display='none'; },20); };
 $('#btnPlan').onclick=()=>{ if(!S.base||!S.lz) return toast('Place the base and the LZ first'); if (P.readMode==='squad') setReadMode('heli'); S.vis=null; schedule(true); };
 function updatePts(){
   $('#baseCur').textContent = S.base ? `${grid(S.base.x,S.base.y,4)} · alt ${Math.round(surfAt(S.base.x,S.base.y))} m` : '—';
@@ -1368,6 +1415,12 @@ let toastT; function toast(m){ const t=$('#toast'); t.textContent=m; t.style.dis
 document.querySelectorAll('.qsel').forEach(el=>el.onchange=()=>{ P.quality=el.value; applyQuality(); changed('aa'); toast(Q().name+' mode: heli '+S.dem.step+' m · squad '+Q().g+' m'); });
 function setLayersCollapsed(c){ P.layersCollapsed=c; $('#layers').classList.toggle('collapsed',c); $('#lyrtog').title=c?'Show display options':'Hide display options'; }
 $('#lyrtog').onclick=()=>{ setLayersCollapsed(!P.layersCollapsed); saveState(); };
+function setSquadOn(on){ P.squadOn=on; $('#squadOn').checked=on; $('#squadOnTxt').textContent=on?'ON':'OFF';
+  $('#sqBody').style.display=on?'':'none'; $('#sqOff').style.display=on?'none':'';
+  if (!on){ SQ.res=null; SQ.auto=false; renderSquad(); if (P.readMode!=='heli') setReadMode('heli'); }
+  document.querySelectorAll('.readmode button[data-rm=squad],.readmode button[data-rm=all]').forEach(b=>b.disabled=!on);
+  const ob=document.querySelector('.maptools [data-mode=obj]'); if (ob) ob.style.display=on?'':'none'; }
+$('#squadOn').onchange=e=>{ setSquadOn(e.target.checked); saveState(); if (e.target.checked && (S.ao||S.obj)){ SQ.auto=true; schedule(true); } else draw(); };
 /* ====================== STARTUP ====================== */
 (function init(){
   const st=store.get('state');
@@ -1380,7 +1433,7 @@ $('#lyrtog').onclick=()=>{ setLayersCollapsed(!P.layersCollapsed); saveState(); 
   for (const [k,src] of [['sat','assets/satellite.webp'],['carte','assets/carte.webp']]){ const im=new Image(); im.onload=()=>draw(); im.src=src; S.imgs[k]=im; }
   store.del('dem'); // the bundled HD terrain is the only dataset
   if (!loadBundledDem()) $('#demInfo').innerHTML='<b style="color:#ff8a80">assets/dem.js not found</b> — keep the assets folder next to index.html.';
-  syncAlignUI(); updatePts(); renderAAList(); syncSquadUI(); setReadMode(P.readMode||'heli'); setSideTab(P.sideTab||'setup'); placeSideTabs(); setLayersCollapsed(!!P.layersCollapsed);
+  syncAlignUI(); updatePts(); renderAAList(); syncSquadUI(); setReadMode(P.readMode||'heli'); setSideTab(P.sideTab||'setup'); placeSideTabs(); setSquadOn(P.squadOn!==false); setLayersCollapsed(!!P.layersCollapsed);
   window.addEventListener('resize', resize); resize();
   $('#zfit').click();
   renderResults(0); schedule(true);
