@@ -62,7 +62,7 @@ The squad planner runs on its own 12.5 m grid in a square around the AO (LZ max 
 - AA ranges are approximate: adjust them to your mission.
 - Arma 3's low-altitude radar ground clutter is not modeled, so the model is conservative against radars.
 
-## V4 / V5 additions
+## V4 / V5 / V6 additions
 
 - **Terrain at 25 m** (1228 × 1228) for the helicopter; squad grid at 12.5 m around the AO with a 12.5 m building map.
 - **Number of infantry paths**: slider, 1 to 5 non-crossing routes.
@@ -77,3 +77,5 @@ The squad planner runs on its own 12.5 m grid in a square around the AO (LZ max 
 - **LZ SAFE**: when "Fly heli here", the automatic best LZ, or an LZ placed by hand points to a spot that air defence can see, the helicopter LZ is moved to the closest safe landing spot (outside the red air-defence areas at flight height and at least *LZ SAFE margin* away from them — slider, default 200 m — flat, dry, no building within 25 m, outside the AO). The map shows "LZ SAFE" with a dashed line to the deferred LZ, and the squad gets its own covered path from LZ SAFE to the objective ("LZ SAFE · for LZ x" card).
 - **Base maps**: Topographic HD, Aerial HD and Shaded relief (the satellite and paper maps were removed; `assets/satellite.webp` and `assets/carte.webp` are no longer used).
 - **Contour lines** layer (display options): isolines computed from the 25 m terrain, every 5 / 10 / 20 / 50 m or *auto* (interval follows the zoom). Every 5th line is a thicker index contour with its altitude when zoomed in; colours switch to light lines on the aerial map.
+- **Town names** layer (display options, on by default): the 48 Altis towns and villages drawn at a constant screen size, so they stay readable when zoomed out. Main cities always show; towns and then villages appear as you zoom in, and labels never overlap (positions from the Plan-Ops atlas).
+- **SQF full export** (Flight plan section): one Debug Console script that draws, as Arma map markers, the helicopter flight path (orange, base / waypoints / heli LZ or LZ SAFE), every infantry path in its own colour (A yellow, B blue, C pink, D green, E khaki, placed/safe LZ white) with exposed stretches in red, LZ markers, and "HC" hard-cover markers. Uses polyline markers (Arma 3 2.04+); `_local = true` keeps the markers to yourself, `false` creates them for everyone. Re-running it replaces the previous `afm_` markers.

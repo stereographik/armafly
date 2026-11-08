@@ -141,7 +141,7 @@ dialog .row{justify-content:flex-end}
 </head>
 <body>
 <aside>
-  <div class="brand"><div class="logo"><span>◆</span></div><div><h1>ARMAFLYMAP</h1><small>Terrain-masked flight &amp; squad insertion · Altis · V5</small></div></div>
+  <div class="brand"><div class="logo"><span>◆</span></div><div><h1>ARMAFLYMAP</h1><small>Terrain-masked flight &amp; squad insertion · Altis · V6</small></div></div>
 
   <div class="sidetabs"><button data-tab="setup" class="on">AO SET UP</button><button data-tab="paths">SQUADS PATH</button></div>
   <div class="tabpane" data-pane="setup">
@@ -214,6 +214,7 @@ dialog .row{justify-content:flex-end}
       <button class="sm" id="exBrief">Briefing</button>
       <button class="sm" id="exMarkers">SQF markers</button>
       <button class="sm" id="exAI">SQF AI heli</button>
+      <button class="sm" id="exAll" title="One SQF script: flight path + every infantry path, LZs and hard cover as Arma map markers">SQF full export</button>
       <button class="sm" id="fitRoute">Center</button>
     </div>
     <div class="row">
@@ -1474,6 +1475,49 @@ for "_i" from 0 to (count _pts - 1) do {
 ${S.aas.map((a,i)=>`private _aa${i} = createMarker ["afm_aa_${i}", [${Math.round(a.x)},${Math.round(a.y)}]]; _aa${i} setMarkerShape "ELLIPSE"; _aa${i} setMarkerSize [${a.range},${a.range}]; _aa${i} setMarkerBrush "Border"; _aa${i} setMarkerColor "ColorRed";`).join('\n')}
 ${S.ao?`private _ao = createMarker ["afm_ao", [${Math.round(S.ao.x)},${Math.round(S.ao.y)}]]; _ao setMarkerShape "ELLIPSE"; _ao setMarkerSize [${S.ao.r},${S.ao.r}]; _ao setMarkerBrush "FDiagonal"; _ao setMarkerColor "ColorRed";\nprivate _aoc = createMarker ["afm_aoc", [${Math.round(S.ao.x)},${Math.round(S.ao.y)}]]; _aoc setMarkerType "mil_objective"; _aoc setMarkerColor "ColorRed"; _aoc setMarkerText "AO";`:''}
 hint "ArmaFlyMap: route drawn";`; }
+// ---- full export: flight path + infantry paths + covers, as Arma map markers (POLYLINE markers, Arma 3 2.04+)
+const SQF_COL={A:'ColorYellow',B:'ColorBlue',C:'ColorPink',D:'ColorGreen',E:'ColorKhaki',HELI:'ColorWhite'};
+function simplify(pts,eps){ if (pts.length<3) return pts.slice(); const keep=new Uint8Array(pts.length); keep[0]=keep[pts.length-1]=1; const st=[[0,pts.length-1]];
+  while (st.length){ const [a,b]=st.pop(); let md=0, mi=-1; const A=pts[a], B=pts[b], L=Math.hypot(B.x-A.x,B.y-A.y)||1;
+    for (let i=a+1;i<b;i++){ const d=Math.abs((B.x-A.x)*(A.y-pts[i].y)-(A.x-pts[i].x)*(B.y-A.y))/L; if (d>md){ md=d; mi=i; } }
+    if (md>eps){ keep[mi]=1; st.push([a,mi],[mi,b]); } }
+  return pts.filter((_,i)=>keep[i]); }
+const sqfPoly=pts=>'['+pts.map(p=>Math.round(p.x)+','+Math.round(p.y)).join(',')+']';
+function sqfFull(){
+  const L=[], r=SQ.res&&!SQ.res.err&&P.squadOn!==false?SQ.res:null, P2=p=>`[${Math.round(p.x)},${Math.round(p.y)}]`;
+  L.push(`// ArmaFlyMap — full export: flight path, infantry paths, LZs, hard cover (map markers)
+// Run in the Debug Console (Local Exec). Needs Arma 3 2.04+ (polyline markers).
+// _local = true: only you see the markers. false: markers are created for everyone (needs the right to run global code).
+private _local = true;
+{ if (_local) then { deleteMarkerLocal _x } else { deleteMarker _x } } forEach (allMapMarkers select {(_x find "afm_") == 0});
+private _mk = { params ["_n","_pos","_type","_col","_txt",["_size",[1,1]]];
+  private _m = if (_local) then { createMarkerLocal [_n,_pos] } else { createMarker [_n,_pos] };
+  _m setMarkerTypeLocal _type; _m setMarkerSizeLocal _size; _m setMarkerTextLocal _txt;
+  if (_local) then { _m setMarkerColorLocal _col } else { _m setMarkerColor _col }; _m };
+private _line = { params ["_n","_poly","_col"];
+  private _m = if (_local) then { createMarkerLocal [_n,[_poly select 0,_poly select 1]] } else { createMarker [_n,[_poly select 0,_poly select 1]] };
+  _m setMarkerShapeLocal "POLYLINE"; _m setMarkerPolylineLocal _poly;
+  if (_local) then { _m setMarkerColorLocal _col } else { _m setMarkerColor _col }; _m };`);
+  // flight path
+  if (S.route){ const w=S.route.wps;
+    L.push(`\n// ---- helicopter flight path (orange)`);
+    L.push(`["afm_heli", ${sqfPoly(w)}, "ColorOrange"] call _line;`);
+    L.push(`["afm_base", ${P2(w[0])}, "mil_start", "ColorOrange", "BASE"] call _mk;`);
+    w.slice(1,-1).forEach((p,i)=>L.push(`["afm_wp_${i+1}", ${P2(p)}, "mil_dot", "ColorOrange", "WP${i+1}"] call _mk;`));
+    L.push(`["afm_hlz", ${P2(w[w.length-1])}, "mil_end", "ColorOrange", "${S.lzSafeOf?'LZ SAFE':'HELI LZ'}"] call _mk;`); }
+  // infantry paths
+  if (r){ const all=[...(r.manual&&!r.manual.err?[r.manual]:[]), ...r.routes];
+    for (const rt of all){ const id=rt.manual?'HELI':rt.name, col=SQF_COL[id]||'ColorWhite', nm=rt.manual?(rt.safeFor?'LZ SAFE':'HELI LZ'):'LZ '+rt.name, key=id.toLowerCase();
+      L.push(`\n// ---- infantry path ${nm} (${col}): ${(rt.walk/1000).toFixed(2)} km, ${Math.round(rt.expo)} m exposed, ${rt.hard.length} hard cover`);
+      L.push(`["afm_sq_${key}", ${sqfPoly(simplify(rt.pts,6))}, "${col}"] call _line;`);
+      if (!rt.manual) L.push(`["afm_lz_${key}", ${P2(rt)}, "mil_pickup", "${col}", "${nm}"] call _mk;`);
+      // exposed stretches in red
+      let run=[], n=0; const flush=()=>{ if (run.length>1) L.push(`["afm_ex_${key}_${n++}", ${sqfPoly(simplify(run,4))}, "ColorRed"] call _line;`); run=[]; };
+      rt.pts.forEach((p,i)=>{ if (r.ex[p.k]){ if (!run.length && i) run.push(rt.pts[i-1]); run.push(p); } else { if (run.length) run.push(p); flush(); } }); flush();
+      rt.hard.forEach((h,i)=>L.push(`["afm_hc_${key}_${i}", ${P2(h)}, "mil_box", "${col}", "HC", [0.5,0.5]] call _mk;`)); } }
+  L.push(`\nhint "ArmaFlyMap: flight path${r?' + '+(r.routes.length+(r.manual&&!r.manual.err?1:0))+' infantry paths':''} drawn on the map";`);
+  return L.join('\n');
+}
 function sqfAI(){ return `// ArmaFlyMap — makes an AI helicopter fly the route.
 // In the editor, name the helicopter "heli1" (variable name), then run this.
 private _veh = heli1;
@@ -1502,6 +1546,7 @@ function copy(t){ const done=()=>toast('Copied to clipboard');
   function fallback(){ const ta=$('#dlgText'); if(!$('#dlg').open){ dialog('Copy',t,'Press Ctrl+C to copy'); return; } ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Press Ctrl+C to copy'); } } }
 $('#exBrief').onclick=()=>S.route?dialog('Briefing',briefing(),'Paste it in chat or Discord, or print it.'):toast('No flight plan yet');
 $('#exMarkers').onclick=()=>S.route?dialog('SQF — map markers',sqfMarkers(),'Arma 3 Debug Console: draws the route and AA circles on the in-game map.'):toast('No flight plan yet');
+$('#exAll').onclick=()=>(S.route||(SQ.res&&!SQ.res.err))?dialog('SQF — full export',sqfFull(),'Arma 3 Debug Console (Local Exec): flight path in orange, infantry paths A yellow · B blue · C pink · D green · E khaki · placed LZ white, exposed stretches red, HC = hard cover.'):toast('Nothing to export yet: compute a flight plan or squad paths');
 $('#exAI').onclick=()=>S.route?dialog('SQF — AI helicopter',sqfAI(),'Name your helicopter "heli1" in the editor, then run this code.'):toast('No flight plan yet');
 $('#saveMission').onclick=()=>{ const blob=new Blob([JSON.stringify({base:S.base,lz:S.lz,obj:S.obj,aas:S.aas,ao:S.ao,squad:SQP,params:{agl:P.agl,speed:P.speed,prud:P.prud,valley:P.valley,climb:P.climb,standoff:P.standoff}},null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mission_armaflymap.json'; a.click(); };
